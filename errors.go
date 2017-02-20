@@ -8,7 +8,6 @@ import (
 
 	"gopkg.in/underarmour/dynago.v1/internal/codes"
 	"gopkg.in/underarmour/dynago.v1/internal/dynamodb"
-	"github.com/valyala/fasthttp"
 )
 
 // Error encapsulates errors coming from amazon/dynamodb.
