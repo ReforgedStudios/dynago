@@ -5,6 +5,7 @@ import (
 
 	"gopkg.in/underarmour/dynago.v1/internal/aws"
 	"gopkg.in/underarmour/dynago.v1/schema"
+	"github.com/ReforgedStudios/dynago/aws2"
 )
 
 /*
@@ -58,6 +59,26 @@ func NewAwsExecutor(endpoint, region, accessKey, secretKey string) *AwsExecutor 
 	}
 	return &AwsExecutor{requester}
 }
+
+// Create an AWS executor with a specified endpoint and AWS parameters.
+func NewAws2Executor(endpoint, region, accessKey, secretKey string) *AwsExecutor {
+	signer := aws2.AwsSigner{
+		Region:    region,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+		Service:   "dynamodb",
+	}
+	requester := &aws2.RequestMaker{
+		Endpoint:       aws2.FixEndpointUrl(endpoint),
+		Signer:         &signer,
+		BuildError:     buildError,
+		DebugRequests:  Debug.HasFlag(DebugRequests),
+		DebugResponses: Debug.HasFlag(DebugResponses),
+		DebugFunc:      DebugFunc,
+	}
+	return &AwsExecutor{requester}
+}
+
 
 /*
 AwsExecutor is the underlying implementation of making requests to DynamoDB.
