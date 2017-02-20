@@ -76,6 +76,7 @@ Signature=7c94297e92ef86c7c56878741e4dca87a091547aacb50e4021c07479cd4bcd61
 
 func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
+	req.Reset()
 	defer fasthttp.ReleaseRequest(req)
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
@@ -87,9 +88,9 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 		target = DynamoTargetPrefix + target
 	}
 	req.Header.Del("User-Agent")
-	req.Header.Add("x-amz-target", target)
-	req.Header.Add("content-type", "application/x-amz-json-1.0")
-	req.Header.Set("Host", string(req.URI().Host()))
+	req.Header.Set("X-Amz-Target", target)
+	req.Header.Set("Content-Type", "application/x-amz-json-1.0")
+	//	req.Header.Set("Host", string(req.URI().Host()))
 	req.SetBody(body)
 	r.Signer.SignRequest(req, body)
 	if r.DebugRequests {
@@ -108,7 +109,6 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	}
 	return respBody, err
 }
-
 
 func FixEndpointUrl(endpoint string) string {
 	u, err := url.Parse(endpoint)
