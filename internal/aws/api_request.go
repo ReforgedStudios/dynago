@@ -57,7 +57,7 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	req.Header.Set("Host", req.URL.Host)
 	r.Signer.SignRequest(req, body)
 	if r.DebugRequests {
-		r.DebugFunc("Request:%#v\n\nRequest Body: %s\n\n", req, body)
+		r.DebugFunc("Request:%s %#v\n\nRequest Body: %s\n\n", req, req.URL.String(), body)
 	}
 	response, err := r.Caller.Do(req)
 	if err != nil {
