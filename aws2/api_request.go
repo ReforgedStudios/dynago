@@ -43,21 +43,54 @@ type RequestMaker struct {
 	DebugFunc      func(string, ...interface{})
 }
 
+/*
+2017/02/20 22:07:41 Dynago DEBUG: Request:&{
+POST https://dynamodb.us-east-1.amazonaws.com:443/ HTTP/1.1 %!s(int=1) %!s(int=1)
+map[
+Authorization:[
+AWS4-HMAC-SHA256
+ Credential=AKIAIVMZCJXQVO45IGUQ/20170220/us-east-1/dynamodb/aws4_request,
+ SignedHeaders=content-type;host;x-amz-date;x-amz-target,
+ Signature=08bca6698d10473a517307e7fd052c6b13acf0b0e4d9e8451b640a665a97f75a]
+ X-Amz-Target:[DynamoDB_20120810.DescribeTable]
+ Content-Type:[application/x-amz-json-1.0]
+ Host:[dynamodb.us-east-1.amazonaws.com:443]
+ X-Amz-Date:[20170220T200741Z]]
+ {{"TableName":"armies"}} %!s(int64=22) [] %!s(bool=false) dynamodb.us-east-1.amazonaws.com:443 map[] map[] %!s(*multipart.Form=<nil>) map[]   %!s(*tls.ConnectionState=<nil>) %!s(<-chan struct {}=<nil>) %!s(*http.Response=<nil>) <nil>} "https://dynamodb.us-east-1.amazonaws.com:443/"
+*/
+/*
+Request:https://dynamodb.us-east-1.amazonaws.com:443/
+POST https://dynamodb.us-east-1.amazonaws.com:443/ HTTP/1.1
+User-Agent: fasthttp
+Host: dynamodb.us-east-1.amazonaws.com:443
+Content-Type: application/x-www-form-urlencoded
+X-Amz-Target: DynamoDB_20120810.DescribeTable
+Content-Type: application/x-amz-json-1.0
+X-Amz-Date: 20170220T200743Z
+Authorization:
+AWS4-HMAC-SHA256
+Credential=AKIAIVMZCJXQVO45IGUQ/20170220/us-east-1/dynamodb/aws4_request,
+SignedHeaders=content-type;host;x-amz-date;x-amz-target,
+Signature=7c94297e92ef86c7c56878741e4dca87a091547aacb50e4021c07479cd4bcd61
+*/
+
 func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
+	req.Header.DisableNormalizing()
 	req.Header.SetMethod("POST")
 	req.SetRequestURI(r.Endpoint)
-	req.AppendBody(body)
 	if !strings.Contains(target, ".") {
 		target = DynamoTargetPrefix + target
 	}
+	req.Header.Del("User-Agent")
 	req.Header.Add("x-amz-target", target)
 	req.Header.Add("content-type", "application/x-amz-json-1.0")
-	req.Header.SetBytesV("Host", req.URI().Host())
+	req.Header.Set("Host", string(req.URI().Host()))
+	req.SetBody(body)
 	r.Signer.SignRequest(req, body)
 	if r.DebugRequests {
 		r.DebugFunc("Request:%s %s\n\nRequest Body: %s\n\n", req.URI().String(), req.Header.String(), body)
