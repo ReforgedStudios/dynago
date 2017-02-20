@@ -37,7 +37,7 @@ type RequestMaker struct {
 	BuildError func(*http.Request, []byte, *http.Response, []byte) error
 
 	// These can be optionally set
-	Caller         fasthttp.Client
+	Caller         *fasthttp.Client
 	DebugRequests  bool
 	DebugResponses bool
 	DebugFunc      func(string, ...interface{})

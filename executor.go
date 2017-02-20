@@ -6,6 +6,8 @@ import (
 	"gopkg.in/underarmour/dynago.v1/internal/aws"
 	"gopkg.in/underarmour/dynago.v1/schema"
 	"github.com/ReforgedStudios/dynago/aws2"
+	"github.com/valyala/fasthttp"
+	"time"
 )
 
 /*
@@ -68,6 +70,8 @@ func NewAws2Executor(endpoint, region, accessKey, secretKey string) *AwsExecutor
 		SecretKey: secretKey,
 		Service:   "dynamodb",
 	}
+	timeout := time.Second * 5
+	httpcli := &fasthttp.Client{WriteTimeout: timeout, ReadTimeout: timeout, MaxConnsPerHost: 128, MaxIdleConnDuration: time.Second * 30}
 	requester := &aws2.RequestMaker{
 		Endpoint:       aws2.FixEndpointUrl(endpoint),
 		Signer:         &signer,
@@ -75,6 +79,7 @@ func NewAws2Executor(endpoint, region, accessKey, secretKey string) *AwsExecutor
 		DebugRequests:  Debug.HasFlag(DebugRequests),
 		DebugResponses: Debug.HasFlag(DebugResponses),
 		DebugFunc:      DebugFunc,
+		Caller:         httpcli,
 	}
 	return &AwsExecutor{requester}
 }
