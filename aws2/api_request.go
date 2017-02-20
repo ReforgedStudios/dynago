@@ -81,7 +81,6 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
-	req.Header.DisableNormalizing()
 	req.Header.SetMethod("POST")
 	req.SetRequestURI(r.Endpoint)
 	if !strings.Contains(target, ".") {
@@ -90,7 +89,7 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	req.Header.Del("User-Agent")
 	req.Header.Set("X-Amz-Target", target)
 	req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-	//	req.Header.Set("Host", string(req.URI().Host()))
+	req.Header.Set("Host", string(req.URI().Host()))
 	req.SetBody(body)
 	r.Signer.SignRequest(req, body)
 	if r.DebugRequests {
