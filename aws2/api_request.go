@@ -99,11 +99,10 @@ func (r *RequestMaker) MakeRequest(target string, reqBody []byte) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	respBody := resp.Body()
-	res := make([]byte, len(respBody))
-	copy(res, respBody)
+	respBody := make([]byte, len(resp.Body()))
+	copy(respBody, resp.Body())
 	if r.DebugResponses {
-		r.DebugFunc("Response: %#v\nBody:%s\n", resp, reqBody)
+		r.DebugFunc("Response: %#v\nBody:%s\n", resp, respBody)
 	}
 	if resp.StatusCode() != http.StatusOK {
 		err = r.BuildError(nil, reqBody, nil, respBody)
