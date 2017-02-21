@@ -74,7 +74,7 @@ SignedHeaders=content-type;host;x-amz-date;x-amz-target,
 Signature=7c94297e92ef86c7c56878741e4dca87a091547aacb50e4021c07479cd4bcd61
 */
 
-func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
+func (r *RequestMaker) MakeRequest(target string, reqBody []byte) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	req.Reset()
 	defer fasthttp.ReleaseRequest(req)
@@ -90,21 +90,23 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	req.Header.Set("X-Amz-Target", target)
 	req.Header.Set("Content-Type", "application/x-amz-json-1.0")
 	req.Header.Set("Host", string(req.URI().Host()))
-	req.SetBody(body)
-	r.Signer.SignRequest(req, body)
+	req.SetBody(reqBody)
+	r.Signer.SignRequest(req, reqBody)
 	if r.DebugRequests {
-		r.DebugFunc("Request:%s %s\n\nRequest Body: %s\n\n", req.URI().String(), req.Header.String(), body)
+		r.DebugFunc("Request:%s %s\n\nRequest Body: %s\n\n", req.URI().String(), req.Header.String(), reqBody)
 	}
 	err := r.Caller.Do(req, resp)
 	if err != nil {
 		return nil, err
 	}
 	respBody := resp.Body()
+	res := make([]byte, len(respBody))
+	copy(res, respBody)
 	if r.DebugResponses {
-		r.DebugFunc("Response: %#v\nBody:%s\n", resp, respBody)
+		r.DebugFunc("Response: %#v\nBody:%s\n", resp, reqBody)
 	}
 	if resp.StatusCode() != http.StatusOK {
-		err = r.BuildError(nil, body, nil, respBody)
+		err = r.BuildError(nil, reqBody, nil, respBody)
 	}
 	return respBody, err
 }
