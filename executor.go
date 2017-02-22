@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/underarmour/dynago.v1/internal/aws"
 	"gopkg.in/underarmour/dynago.v1/schema"
-	"github.com/ReforgedStudios/dynago/aws2"
+	"gopkg.in/underarmour/dynago.v1/aws2"
 	"github.com/valyala/fasthttp"
 	"time"
 )
