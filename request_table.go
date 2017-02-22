@@ -1,7 +1,7 @@
 package dynago
 
 import (
-	"gopkg.in/underarmour/dynago.v1/schema"
+	"github.com/ReforgedStudios/dynago/schema"
 )
 
 type awsSchemaExecutor struct {

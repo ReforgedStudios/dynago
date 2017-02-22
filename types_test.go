@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/underarmour/dynago.v1"
+	"github.com/ReforgedStudios/dynago"
 )
 
 func ExampleList() {

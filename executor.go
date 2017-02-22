@@ -3,11 +3,8 @@ package dynago
 import (
 	"encoding/json"
 
-	"gopkg.in/underarmour/dynago.v1/internal/aws"
-	"gopkg.in/underarmour/dynago.v1/schema"
-	"gopkg.in/underarmour/dynago.v1/aws2"
-	"github.com/valyala/fasthttp"
-	"time"
+	"github.com/ReforgedStudios/dynago/internal/aws"
+	"github.com/ReforgedStudios/dynago/schema"
 )
 
 /*
@@ -61,29 +58,6 @@ func NewAwsExecutor(endpoint, region, accessKey, secretKey string) *AwsExecutor 
 	}
 	return &AwsExecutor{requester}
 }
-
-// Create an AWS executor with a specified endpoint and AWS parameters.
-func NewAws2Executor(endpoint, region, accessKey, secretKey string) *AwsExecutor {
-	signer := aws2.AwsSigner{
-		Region:    region,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
-		Service:   "dynamodb",
-	}
-	timeout := time.Second * 5
-	httpcli := &fasthttp.Client{WriteTimeout: timeout, ReadTimeout: timeout, MaxConnsPerHost: 128, MaxIdleConnDuration: time.Second * 30}
-	requester := &aws2.RequestMaker{
-		Endpoint:       aws2.FixEndpointUrl(endpoint),
-		Signer:         &signer,
-		BuildError:     buildError,
-		DebugRequests:  Debug.HasFlag(DebugRequests),
-		DebugResponses: Debug.HasFlag(DebugResponses),
-		DebugFunc:      DebugFunc,
-		Caller:         httpcli,
-	}
-	return &AwsExecutor{requester}
-}
-
 
 /*
 AwsExecutor is the underlying implementation of making requests to DynamoDB.

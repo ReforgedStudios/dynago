@@ -1,3 +1,12 @@
+About this fork
+===============
+
+This fork contains some performance optimizations for the original library, mainly using `github.com/valyala/fasthttp` instead of `net/http`.
+
+When tested with our real server side applications, these changes increased the application throughput 50%-200% in our load tests. 
+
+The results will of course largely depend on your application so you should always test them yourself.
+
 Dynago
 ======
 
