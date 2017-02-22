@@ -1,4 +1,4 @@
-package dynago
+package fhttp
 
 import (
 	"bytes"
@@ -8,41 +8,15 @@ import (
 	"encoding/json"
 	"github.com/valyala/fasthttp"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
 )
 
-// Create an AWS executor with a specified endpoint and AWS parameters.
-func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) Executor {
-	signer := &fhttpAwsSigner{
-		Region:    region,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
-		Service:   "dynamodb",
-	}
-	timeout := time.Second * 5
-	httpcli := &fasthttp.Client{WriteTimeout: timeout, ReadTimeout: timeout, MaxConnsPerHost: 128, MaxIdleConnDuration: time.Second * 30}
-	executor := &AwsFHttpExecutor{
-		Endpoint:       FixEndpointUrl(endpoint),
-		Signer:         signer,
-		BuildError:     buildError,
-		DebugRequests:  Debug.HasFlag(DebugRequests),
-		DebugResponses: Debug.HasFlag(DebugResponses),
-		DebugFunc:      DebugFunc,
-		httpcli:        httpcli,
-	}
-	return executor
-}
-
-var _ Executor = &AwsFHttpExecutor{}
-
-type AwsFHttpExecutor struct {
-	AwsExecutor
+type FastHttpRequester struct {
 	// These are required to be set
 	Endpoint   string
-	Signer     *fhttpAwsSigner
+	Signer     *FastHttpAwsSigner
 	BuildError func(*http.Request, []byte, *http.Response, []byte) error
 
 	// These can be optionally set
@@ -54,7 +28,7 @@ type AwsFHttpExecutor struct {
 
 const DynamoTargetPrefix = "DynamoDB_20120810."
 
-func (r *AwsFHttpExecutor) MakeRequestUnMarshal(target string, reqObj interface{}, respObj interface{}) error {
+func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respObj interface{}) error {
 	reqBody, err := json.Marshal(reqObj)
 	if err != nil {
 		return err
@@ -88,23 +62,13 @@ func (r *AwsFHttpExecutor) MakeRequestUnMarshal(target string, reqObj interface{
 	}
 	if resp.StatusCode() != http.StatusOK {
 		err = r.BuildError(nil, reqBody, nil, resp.Body())
+		return err
 	}
-	err = json.Unmarshal(resp.Body(), respObj)
-	return err
-}
-
-func FixEndpointUrl(endpoint string) string {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		panic(err)
+	if respObj != nil {
+		err = json.Unmarshal(resp.Body(), respObj)
+		return err
 	}
-	if u.Path == "" {
-		u.Path = "/"
-	}
-	if u.Scheme == "https" && !strings.Contains(u.Host, ":") {
-		u.Host += ":443"
-	}
-	return u.String()
+	return nil
 }
 
 const algorithm = "AWS4-HMAC-SHA256"
@@ -118,14 +82,14 @@ This is required for all aws requests to ensure:
 	2. It also prevents replay attacks
 	3. It also handles authentication without sending or revealing the shared secret
 */
-type fhttpAwsSigner struct {
+type FastHttpAwsSigner struct {
 	AccessKey string
 	SecretKey string
 	Region    string
 	Service   string
 }
 
-func (info *fhttpAwsSigner) SignRequest(request *fasthttp.Request, bodyBytes []byte) {
+func (info *FastHttpAwsSigner) SignRequest(request *fasthttp.Request, bodyBytes []byte) {
 	now := time.Now().UTC()
 	isoDateSmash := now.Format("20060102T150405Z")
 	request.Header.Add("x-amz-date", isoDateSmash)
@@ -176,7 +140,7 @@ func canonicalHeaders(buf *bytes.Buffer, headers fasthttp.RequestHeader) string 
 	return signedHeaders
 }
 
-func signingKey(now time.Time, info *fhttpAwsSigner) []byte {
+func signingKey(now time.Time, info *FastHttpAwsSigner) []byte {
 	kSecret := "AWS4" + info.SecretKey
 	kDate := hmacShort([]byte(kSecret), []byte(now.Format("20060102")))
 	kRegion := hmacShort(kDate, []byte(info.Region))

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
+	"encoding/json"
 )
 
 // DynamoTargetPrefix is the Dynamo API version we support.
@@ -44,10 +44,14 @@ type RequestMaker struct {
 	DebugFunc      func(string, ...interface{})
 }
 
-func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
+func (r *RequestMaker) MakeRequest(target string, reqObj interface{}, respObj interface{}) error {
+	body, err := json.Marshal(reqObj)
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequest("POST", r.Endpoint, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !strings.Contains(target, ".") {
 		target = DynamoTargetPrefix + target
@@ -61,7 +65,7 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	}
 	response, err := r.Caller.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	respBody, err := responseBytes(response)
 	if r.DebugResponses {
@@ -69,8 +73,13 @@ func (r *RequestMaker) MakeRequest(target string, body []byte) ([]byte, error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		err = r.BuildError(req, body, response, respBody)
+		return err
 	}
-	return respBody, err
+	if respObj != nil {
+		err = json.Unmarshal(respBody, respObj)
+		return err
+	}
+	return nil
 }
 
 func responseBytes(response *http.Response) (output []byte, err error) {
@@ -90,18 +99,4 @@ func responseBytes(response *http.Response) (output []byte, err error) {
 		}
 	}
 	return
-}
-
-func FixEndpointUrl(endpoint string) string {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		panic(err)
-	}
-	if u.Path == "" {
-		u.Path = "/"
-	}
-	if u.Scheme == "https" && !strings.Contains(u.Host, ":") {
-		u.Host += ":443"
-	}
-	return u.String()
 }

@@ -83,7 +83,7 @@ func (e *AwsExecutor) PutItem(p *PutItem) (res *PutItemResult, err error) {
 	if (p.req.ReturnValues != ReturnNone && p.req.ReturnValues != "") || p.req.ReturnConsumedCapacity != "" {
 		err = e.MakeRequestUnmarshal("PutItem", &p.req, &res)
 	} else {
-		_, err = e.makeRequest("PutItem", &p.req)
+		err = e.MakeRequestUnmarshal("PutItem", &p.req, nil)
 	}
 	return
 }

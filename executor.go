@@ -1,10 +1,11 @@
 package dynago
 
 import (
-	"encoding/json"
-
 	"github.com/ReforgedStudios/dynago/internal/aws"
 	"github.com/ReforgedStudios/dynago/schema"
+	"net/url"
+	"strings"
+	"github.com/ReforgedStudios/dynago/fhttp"
 )
 
 /*
@@ -37,7 +38,7 @@ type SchemaExecutor interface {
 
 // AwsRequester makes requests to dynamodb
 type AwsRequester interface {
-	MakeRequest(target string, body []byte) ([]byte, error)
+	MakeRequest(target string, reqObj interface{}, respObj interface{}) error
 }
 
 // Create an AWS executor with a specified endpoint and AWS parameters.
@@ -49,7 +50,25 @@ func NewAwsExecutor(endpoint, region, accessKey, secretKey string) *AwsExecutor 
 		Service:   "dynamodb",
 	}
 	requester := &aws.RequestMaker{
-		Endpoint:       aws.FixEndpointUrl(endpoint),
+		Endpoint:       FixEndpointUrl(endpoint),
+		Signer:         &signer,
+		BuildError:     buildError,
+		DebugRequests:  Debug.HasFlag(DebugRequests),
+		DebugResponses: Debug.HasFlag(DebugResponses),
+		DebugFunc:      DebugFunc,
+	}
+	return &AwsExecutor{requester}
+}
+
+func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExecutor {
+	signer := fhttp.FastHttpAwsSigner{
+		Region:    region,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+		Service:   "dynamodb",
+	}
+	requester := &fhttp.FastHttpRequester{
+		Endpoint:       FixEndpointUrl(endpoint),
 		Signer:         &signer,
 		BuildError:     buildError,
 		DebugRequests:  Debug.HasFlag(DebugRequests),
@@ -70,14 +89,6 @@ type AwsExecutor struct {
 	Requester AwsRequester
 }
 
-func (e *AwsExecutor) makeRequest(target string, document interface{}) ([]byte, error) {
-	buf, err := json.Marshal(document)
-	if err != nil {
-		return nil, err
-	}
-	return e.Requester.MakeRequest(target, buf)
-}
-
 /*
 Make a request to the underlying requester, marshaling document as JSON,
 and if the requester doesn't error, unmarshaling the response back into dest.
@@ -86,15 +97,25 @@ This method is mostly exposed for those implementing custom executors or
 prototyping new functionality.
 */
 func (e *AwsExecutor) MakeRequestUnmarshal(method string, document interface{}, dest interface{}) (err error) {
-	body, err := e.makeRequest(method, document)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(body, dest)
-	return
+	return e.Requester.MakeRequest(method, document, dest)
 }
 
 // Return a SchemaExecutor making requests on this Executor.
 func (e *AwsExecutor) SchemaExecutor() SchemaExecutor {
 	return awsSchemaExecutor{e}
+}
+
+
+func FixEndpointUrl(endpoint string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		panic(err)
+	}
+	if u.Path == "" {
+		u.Path = "/"
+	}
+	if u.Scheme == "https" && !strings.Contains(u.Host, ":") {
+		u.Host += ":443"
+	}
+	return u.String()
 }

@@ -92,7 +92,7 @@ func (e *AwsExecutor) UpdateItem(u *UpdateItem) (result *UpdateItemResult, err e
 	if u.req.ReturnValues != ReturnNone && u.req.ReturnValues != "" {
 		err = e.MakeRequestUnmarshal("UpdateItem", &u.req, &result)
 	} else {
-		_, err = e.makeRequest("UpdateItem", &u.req)
+		err = e.MakeRequestUnmarshal("UpdateItem", &u.req, nil)
 	}
 	return
 }

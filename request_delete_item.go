@@ -58,7 +58,7 @@ func (e *AwsExecutor) DeleteItem(d *DeleteItem) (res *DeleteItemResult, err erro
 	if d.req.ReturnValues != ReturnNone && d.req.ReturnValues != "" {
 		err = e.MakeRequestUnmarshal("DeleteItem", &d.req, &res)
 	} else {
-		_, err = e.makeRequest("DeleteItem", &d.req)
+		err = e.MakeRequestUnmarshal("DeleteItem", &d.req, nil)
 	}
 	return
 }
