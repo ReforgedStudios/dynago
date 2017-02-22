@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 	"github.com/ReforgedStudios/dynago/fhttp"
+	"github.com/valyala/fasthttp"
+	"time"
 )
 
 /*
@@ -67,6 +69,12 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		SecretKey: secretKey,
 		Service:   "dynamodb",
 	}
+	httpcli := &fasthttp.Client{
+		ReadTimeout: time.Second * 10,
+		WriteTimeout: time.Second * 10,
+		MaxIdleConnDuration: time.Second * 60,
+		MaxConnsPerHost: 100,
+	}
 	requester := &fhttp.FastHttpRequester{
 		Endpoint:       FixEndpointUrl(endpoint),
 		Signer:         &signer,
@@ -74,6 +82,7 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		DebugRequests:  Debug.HasFlag(DebugRequests),
 		DebugResponses: Debug.HasFlag(DebugResponses),
 		DebugFunc:      DebugFunc,
+		HttpCli:        httpcli,
 	}
 	return &AwsExecutor{requester}
 }

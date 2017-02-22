@@ -20,7 +20,7 @@ type FastHttpRequester struct {
 	BuildError func(*http.Request, []byte, *http.Response, []byte) error
 
 	// These can be optionally set
-	httpcli        *fasthttp.Client
+	HttpCli        *fasthttp.Client
 	DebugRequests  bool
 	DebugResponses bool
 	DebugFunc      func(string, ...interface{})
@@ -53,7 +53,7 @@ func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respO
 	if r.DebugRequests {
 		r.DebugFunc("Request:%s %s\n\nRequest Body: %s\n\n", req.URI().String(), req.Header.String(), reqBody)
 	}
-	err = r.httpcli.Do(req, resp)
+	err = r.HttpCli.Do(req, resp)
 	if err != nil {
 		return err
 	}
