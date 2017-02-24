@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"errors"
 )
 
 type FastHttpRequester struct {
@@ -32,7 +33,7 @@ const DynamoTargetPrefix = "DynamoDB_20120810."
 func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respObj interface{}) error {
 	reqBody, err := json.Marshal(reqObj)
 	if err != nil {
-		return err
+		return errors.New("req marshal: " + err.Error())
 	}
 	req := fasthttp.AcquireRequest()
 	req.Reset()
@@ -57,12 +58,13 @@ func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respO
 
 	// retry 3 times
 	now := time.Now()
+	err = r.HttpCli.Do(req, resp)
 	for i := 0; i < 3 && err != nil; i++ {
 		err = r.HttpCli.Do(req, resp)
 	}
 	r.TimeHttp(now)
 	if err != nil {
-		return err
+		return errors.New("http err: " + err.Error())
 	}
 	if r.DebugResponses {
 		r.DebugFunc("Response: %#v\nBody:%s\n", resp, resp.Body())
@@ -73,7 +75,9 @@ func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respO
 	}
 	if respObj != nil {
 		err = json.Unmarshal(resp.Body(), respObj)
-		return err
+		if err != nil {
+			return errors.New("resp unmarshal: " + err.Error())
+		}
 	}
 	return nil
 }
