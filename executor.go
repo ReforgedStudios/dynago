@@ -1,12 +1,12 @@
 package dynago
 
 import (
+	"github.com/ReforgedStudios/dynago/fhttp"
 	"github.com/ReforgedStudios/dynago/internal/aws"
 	"github.com/ReforgedStudios/dynago/schema"
+	"github.com/valyala/fasthttp"
 	"net/url"
 	"strings"
-	"github.com/ReforgedStudios/dynago/fhttp"
-	"github.com/valyala/fasthttp"
 	"time"
 )
 
@@ -70,10 +70,10 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		Service:   "dynamodb",
 	}
 	httpcli := &fasthttp.Client{
-		ReadTimeout: time.Second * 10,
-		WriteTimeout: time.Second * 10,
+		ReadTimeout:         time.Second * 60,
+		WriteTimeout:        time.Second * 60,
 		MaxIdleConnDuration: time.Second * 60,
-		MaxConnsPerHost: 100,
+		MaxConnsPerHost:     100,
 	}
 	requester := &fhttp.FastHttpRequester{
 		Endpoint:       FixEndpointUrl(endpoint),
@@ -83,9 +83,12 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		DebugResponses: Debug.HasFlag(DebugResponses),
 		DebugFunc:      DebugFunc,
 		HttpCli:        httpcli,
+		TimeHttp:       TimeHttpFunc,
 	}
 	return &AwsExecutor{requester}
 }
+
+var TimeHttpFunc func(since time.Time) = func(since time.Time) {}
 
 /*
 AwsExecutor is the underlying implementation of making requests to DynamoDB.
@@ -113,7 +116,6 @@ func (e *AwsExecutor) MakeRequestUnmarshal(method string, document interface{}, 
 func (e *AwsExecutor) SchemaExecutor() SchemaExecutor {
 	return awsSchemaExecutor{e}
 }
-
 
 func FixEndpointUrl(endpoint string) string {
 	u, err := url.Parse(endpoint)

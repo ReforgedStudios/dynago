@@ -24,6 +24,7 @@ type FastHttpRequester struct {
 	DebugRequests  bool
 	DebugResponses bool
 	DebugFunc      func(string, ...interface{})
+	TimeHttp       func(since time.Time)
 }
 
 const DynamoTargetPrefix = "DynamoDB_20120810."
@@ -53,7 +54,13 @@ func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respO
 	if r.DebugRequests {
 		r.DebugFunc("Request:%s %s\n\nRequest Body: %s\n\n", req.URI().String(), req.Header.String(), reqBody)
 	}
-	err = r.HttpCli.Do(req, resp)
+
+	// retry 3 times
+	now := time.Now()
+	for i := 0; i < 3 && err != nil; i++ {
+		err = r.HttpCli.Do(req, resp)
+	}
+	r.TimeHttp(now)
 	if err != nil {
 		return err
 	}
