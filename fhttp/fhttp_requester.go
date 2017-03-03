@@ -6,12 +6,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"github.com/valyala/fasthttp"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
-	"errors"
 )
 
 type FastHttpRequester struct {
@@ -26,11 +26,16 @@ type FastHttpRequester struct {
 	DebugResponses bool
 	DebugFunc      func(string, ...interface{})
 	TimeHttp       func(since time.Time)
+	Semaphore      chan int
 }
 
 const DynamoTargetPrefix = "DynamoDB_20120810."
 
 func (r *FastHttpRequester) MakeRequest(target string, reqObj interface{}, respObj interface{}) error {
+	r.Semaphore <- 0
+	defer func() {
+		<-r.Semaphore
+	}()
 	reqBody, err := json.Marshal(reqObj)
 	if err != nil {
 		return errors.New("req marshal: " + err.Error())

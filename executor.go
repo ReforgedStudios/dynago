@@ -69,11 +69,12 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		SecretKey: secretKey,
 		Service:   "dynamodb",
 	}
+	maxConnections := 100
 	httpcli := &fasthttp.Client{
 		ReadTimeout:         time.Second * 60,
 		WriteTimeout:        time.Second * 60,
 		MaxIdleConnDuration: time.Second * 60,
-		MaxConnsPerHost:     100,
+		MaxConnsPerHost:     maxConnections,
 	}
 	requester := &fhttp.FastHttpRequester{
 		Endpoint:       FixEndpointUrl(endpoint),
@@ -84,6 +85,7 @@ func NewAwsFHttpExecutor(endpoint, region, accessKey, secretKey string) *AwsExec
 		DebugFunc:      DebugFunc,
 		HttpCli:        httpcli,
 		TimeHttp:       TimeHttpFunc,
+		Semaphore:      make(chan int, maxConnections),
 	}
 	return &AwsExecutor{requester}
 }
